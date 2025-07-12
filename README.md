@@ -56,6 +56,16 @@ To stop and remove all containers:
 ```bash
 docker-compose down
 ```
+## Troubleshooting
+
+| Problem                                 | Possible Fix                                                 |
+| --------------------------------------- | ------------------------------------------------------------ |
+| ❌ Replication lag or slaves not syncing | Check GTID settings and slave status (`SHOW SLAVE STATUS\G`) |
+| ❌ ProxySQL health check fails           | Confirm `monitor` user credentials and hostgroups            |
+| ❌ Can't connect to master/slave         | Verify container ports, firewall, and network                |
+| 🐳 Containers restart / crash           | Inspect logs & check volume mounts                           |
+| ❗ ProxySQL not routing reads            | Confirm query rules and hostgroup IDs                        |
+
 
 ---
 Feel free to modify configs for your own replication or ProxySQL experiments!
