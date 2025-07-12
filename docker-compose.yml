@@ -1,0 +1,84 @@
+version: '3'
+
+services:
+  mysql-master:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-master
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes:
+      - ./master/my.cnf:/etc/mysql/my.cnf
+      - ./master/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - mysql_cluster_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+
+  mysql-slave1:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-slave1
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes:
+      - ./slave/my-slave1.cnf:/etc/mysql/my.cnf
+      - ./slave/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3307:3306"
+    depends_on:
+      - mysql-master
+    networks:
+      - mysql_cluster_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+
+  mysql-slave2:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-slave2
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes:
+      - ./slave/my-slave2.cnf:/etc/mysql/my.cnf
+      - ./slave/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3308:3306"
+    depends_on:
+      - mysql-master
+    networks:
+      - mysql_cluster_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+
+  proxysql:
+    image: proxysql/proxysql:2.0.12
+    container_name: proxysql-mysql-replication-proxysql
+    ports:
+      - "6032:6032"
+      - "6033:6033"
+    volumes:
+      - ./proxysql/proxysql.cnf:/etc/proxysql.cnf
+      - ./proxysql/data:/var/lib/proxysql
+    networks:
+      - mysql_cluster_net
+    depends_on:
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+    healthcheck:
+      test: ["CMD", "proxysql_admin", "-u", "admin2", "-ppass2", "-h", "127.0.0.1", "-P", "6032", "--execute", "SELECT 1"]
+      timeout: 20s
+      retries: 5
+
+networks:
+  mysql_cluster_net:
+    driver: bridge
